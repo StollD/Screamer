@@ -2,7 +2,6 @@
 using Kopernicus;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Screamer
@@ -16,14 +15,6 @@ namespace Screamer
             ScreenMessage
         }
 
-        public enum OnceMode
-        {
-            PerGameCreation,
-            PerGameSession,
-            PerKSPSession,
-            None
-        }
-
         /// <summary>
         /// The expression parser that is responsible for evaluating the scream conditions
         /// </summary>
@@ -34,7 +25,7 @@ namespace Screamer
 
         // Should the scream get displayed multiple times?
         [ParserTarget("once")]
-        public EnumParser<OnceMode> once = OnceMode.None;
+        public NumericParser<Boolean> once = false;
 
         // How long (in seconds) should the program wait after a scene change before it displays the scream?
         [ParserTarget("delay")]
@@ -77,9 +68,9 @@ namespace Screamer
         private IBooleanExpression _expression;
 
         /// <summary>
-        /// A list of games where this scream was shown
+        /// Whether the message was already shown in this KSP session
         /// </summary>
-        private List<Game> _shown { get; set; }
+        private Boolean _shown { get; set; }
 
         void IParserEventSubscriber.Apply(ConfigNode node)
         {
@@ -91,7 +82,6 @@ namespace Screamer
                     _parser.RegisterVariable<Boolean>(key);
                 }
             }
-            _shown = new List<Game>();
         }
 
         void IParserEventSubscriber.PostApply(ConfigNode node)
@@ -105,31 +95,9 @@ namespace Screamer
         public void Process()
         {
             // Was the scream already shown?
-            if (once == OnceMode.PerKSPSession && _shown.Any())
+            if (once && _shown)
             {
                 return;
-            }
-            if (once == OnceMode.PerGameSession)
-            {
-                if (HighLogic.CurrentGame == null)
-                {
-                    return;
-                }
-                if (_shown.Any(g => g == HighLogic.CurrentGame))
-                {
-                    return;
-                }
-            }
-            if (once == OnceMode.PerGameCreation)
-            {
-                if (HighLogic.CurrentGame == null)
-                {
-                    return;
-                }
-                if (HighLogic.CurrentGame.Get(name) == "True")
-                {
-                    return;
-                }
             }
 
             // Build the evaluator variables
@@ -171,11 +139,7 @@ namespace Screamer
                         new DialogGUIButton("OK", () => { }, true));
                     PopupDialog.SpawnPopupDialog(new Vector2(0f, 1f), new Vector2(0f, 1f), dialog, false, UISkinManager.GetSkin("MainMenuSkin"));
                 }
-                _shown.Add(HighLogic.CurrentGame);
-                if (once == OnceMode.PerGameCreation)
-                {
-                    HighLogic.CurrentGame.Set(name, "True");
-                }
+                _shown = true;
                 Debug.Log("[Screamer] Displayed scream \"" + name + "\"");
             }));
         }

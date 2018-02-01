@@ -18,5 +18,11 @@ namespace Screamer
         {
             GameEvents.OnMapEntered.Add(() => action());
         }
+
+        [ScreamTrigger("OnMapExited")]
+        public static void OnMapExited(Action action)
+        {
+            GameEvents.OnMapExited.Add(() => action());
+        }
     }
 }
