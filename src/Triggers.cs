@@ -7,10 +7,10 @@ namespace Screamer
     /// </summary>
     public static class Triggers
     {
-        [ScreamTrigger("OnGameSceneLoadRequested")]
-        public static void OnGameSceneLoadRequested(Action action)
+        [ScreamTrigger("OnLevelWasLoadedGUIReady")]
+        public static void OnLevelWasLoadedGUIReady(Action action)
         {
-            GameEvents.onGameSceneLoadRequested.Add(s => action());
+            GameEvents.onLevelWasLoadedGUIReady.Add(s => action());
         }
 
         [ScreamTrigger("OnMapEntered")]

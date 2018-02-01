@@ -108,7 +108,7 @@ namespace Screamer
                         }
 
                         // The method needs one parameter
-                        if (info.GetParameters().Length == 1)
+                        if (info.GetParameters().Length != 1)
                         {
                             continue;
                         }

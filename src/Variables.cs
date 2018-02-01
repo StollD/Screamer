@@ -13,6 +13,12 @@ namespace Screamer
             return HighLogic.CurrentGame?.Title;
         }
 
+        [ScreamVariable("br")]
+        public static String NewLine()
+        {
+            return "\n";
+        }
+
         // Just this one example for now
     }
 }

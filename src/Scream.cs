@@ -1,5 +1,4 @@
-﻿using Dahomey.ExpressionEvaluator;
-using Kopernicus;
+﻿using Kopernicus;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,18 +6,17 @@ using UnityEngine;
 namespace Screamer
 {
     [RequireConfigType(ConfigType.Node)]
-    public class Scream : IParserEventSubscriber
+    public class Scream
     {
+        /// <summary>
+        /// How should the message get displayed
+        /// </summary>
         public enum ScreamMessageType
         {
             PopupDialog,
-            ScreenMessage
+            ScreenMessage,
+            Debug
         }
-
-        /// <summary>
-        /// The expression parser that is responsible for evaluating the scream conditions
-        /// </summary>
-        private static ExpressionParser _parser { get; set; }
 
         [ParserTarget("name", optional = false)]
         public String name;
@@ -33,10 +31,7 @@ namespace Screamer
 
         // When should the scream get displayed?
         [ParserTarget("condition", optional = false)]
-        public String condition
-        {
-            set { _expression = _parser.ParseBooleanExpression(value); }
-        }
+        public StringCollectionParser condition;
 
         // How should the scream get displayed?
         [ParserTarget("type", optional = false)]
@@ -62,32 +57,13 @@ namespace Screamer
         [ParserTarget("message", optional = false)]
         public String message;
 
-        /// <summary>
-        /// The expression that determines whether the scream should be displayed
-        /// </summary>
-        private IBooleanExpression _expression;
+        [ParserTarget("button")]
+        public String button = "OK";
 
         /// <summary>
         /// Whether the message was already shown in this KSP session
         /// </summary>
         private Boolean _shown { get; set; }
-
-        void IParserEventSubscriber.Apply(ConfigNode node)
-        {
-            if (_parser == null)
-            {
-                _parser = new ExpressionParser();
-                foreach (String key in ScreamBehaviour.Conditions.Keys)
-                {
-                    _parser.RegisterVariable<Boolean>(key);
-                }
-            }
-        }
-
-        void IParserEventSubscriber.PostApply(ConfigNode node)
-        {
-            
-        }
 
         /// <summary>
         /// Displays the scream if the condition evals to true
@@ -101,12 +77,11 @@ namespace Screamer
             }
 
             // Build the evaluator variables
-            Dictionary<String, System.Object> data = new Dictionary<String, System.Object>();
-            foreach (KeyValuePair<String, Func<Boolean>> kVP in ScreamBehaviour.Conditions)
+            Boolean canExecute = true;
+            foreach (String s in condition.value)
             {
-                data.Add(kVP.Key, kVP.Value());
+                canExecute &= ScreamBehaviour.Conditions[s]();
             }
-            Boolean canExecute = _expression.Evaluate(data);
             
             // Should we continue?
             if (!canExecute)
@@ -115,7 +90,7 @@ namespace Screamer
             }
 
             // Assemble the message
-            String _message = message;
+            String _message = message.Replace("\\n", "\n");
             String _title = title;
             foreach (KeyValuePair<String, Func<String>> kVP in ScreamBehaviour.Variables)
             {
@@ -130,14 +105,21 @@ namespace Screamer
                 {
                     ScreenMessages.PostScreenMessage(_message, duration, style);
                 }
-                else
+
+                if (type == ScreamMessageType.PopupDialog)
                 {
                     Single x = position.value.x / Screen.width;
                     Single y = (Screen.height - position.value.y) / Screen.height;
                     MultiOptionDialog dialog = new MultiOptionDialog(Guid.NewGuid().ToString(), _message,
-                        _title, UISkinManager.GetSkin("MainMenuSkin"), new Rect(x, y, -1f, -1f),
-                        new DialogGUIButton("OK", () => { }, true));
-                    PopupDialog.SpawnPopupDialog(new Vector2(0f, 1f), new Vector2(0f, 1f), dialog, false, UISkinManager.GetSkin("MainMenuSkin"));
+                        _title, UISkinManager.GetSkin("MainMenuSkin"), new Rect(x, y, 300f, 100f),
+                        new DialogGUIButton(button, () => { }, true));
+                    PopupDialog.SpawnPopupDialog(new Vector2(0f, 1f), new Vector2(0f, 1f), dialog, false,
+                        UISkinManager.GetSkin("MainMenuSkin"));
+                }
+
+                if (type == ScreamMessageType.Debug)
+                {
+                    Debug.Log("[" + _title + "] " + _message);
                 }
                 _shown = true;
                 Debug.Log("[Screamer] Displayed scream \"" + name + "\"");
