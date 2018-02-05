@@ -49,6 +49,13 @@ Simply create a new cfg in your GameData, and edit the main cfg that is shipped 
                 name = OK
                 actions = Dismiss
             }
+            // Action
+            // {
+            //     name = Open Link
+            //     actions = url(s):google.com
+            //     // url -> http
+            //     // urls -> https
+            // }
             // Other Actions: https://github.com/StollD/Screamer/blob/master/src/Actions.cs
         }
     }
