@@ -22,7 +22,10 @@ Simply create a new cfg in your GameData, and edit the main cfg that is shipped 
         position = <where the message is located on screen (PopupDialog only)>
         title = <A headline for your message>
         message = <Your actual message. Newlines are done using @br>
-        button = <The text of the OK-Button (PopupDialog only)>
+        Actions <A list of button texts and actions (PopupDialog only)>
+        {
+            
+        }
     }
 
     // Concrete example
@@ -39,6 +42,15 @@ Simply create a new cfg in your GameData, and edit the main cfg that is shipped 
         title = God
         message = Your system is broken.@br@brHave a nice day. 
         // Other variables: https://github.com/StollD/Screamer/blob/master/src/Variables.cs
+        Actions
+        {
+            Action
+            {
+                name = OK
+                actions = Dismiss
+            }
+            // Other Actions: https://github.com/StollD/Screamer/blob/master/src/Actions.cs
+        }
     }
 }
 ```

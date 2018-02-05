@@ -26,10 +26,23 @@ namespace Screamer
         /// </summary>
         public static Dictionary<String, Func<String>> Variables { get; set; }
 
+        /// <summary>
+        /// A list with all implemented actions
+        /// </summary>
+        public static Dictionary<String, Action> Actions { get; set; }
+        
+        /// <summary>
+        /// The Instance of the Scream Behaviour
+        /// </summary>
+        public static ScreamBehaviour Instance { get; set; }
+
         void Start()
         {
             // Keep this alive
             DontDestroyOnLoad(this);
+            
+            // Assign Instance
+            Instance = this;
 
             // Get the config file from GameData
             ConfigNode config = GameDatabase.Instance.GetConfigs("SCREAMER")[0].config;
@@ -43,6 +56,7 @@ namespace Screamer
             // Create the collection
             Conditions = new Dictionary<String, Func<Boolean>>();
             Variables = new Dictionary<String, Func<String>>();
+            Actions = new Dictionary<String, Action>();
 
             // Select all methods that match
             foreach (Type type in Parser.ModTypes)
@@ -122,6 +136,30 @@ namespace Screamer
                         // Pass the ProcessScreams method to the event
                         info.Invoke(null, new[] { new Action(ProcessScreams) });
                         Debug.Log("[Screamer] Found Trigger: " + triggerAttributes[0].Name);
+                        continue;
+                    }
+
+
+                    // The method is a scream action
+                    ScreamActionAttribute[] actionAttributes = info.GetCustomAttributes(typeof(ScreamActionAttribute), false) as ScreamActionAttribute[];
+                    if (actionAttributes != null && actionAttributes.Length > 0)
+                    {
+                        // The method has to return a void
+                        if (info.ReturnType != typeof(void))
+                        {
+                            continue;
+                        }
+
+                        // The method needs no parameters
+                        if (info.GetParameters().Length != 0)
+                        {
+                            continue;
+                        }
+
+                        // Pass the ProcessScreams method to the event
+                        Action dlg = (Action)Delegate.CreateDelegate(typeof(Action), info);
+                        Actions.Add(actionAttributes[0].Name, dlg);
+                        Debug.Log("[Screamer] Found Action: " + actionAttributes[0].Name);
                         continue;
                     }
                 }

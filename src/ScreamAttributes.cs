@@ -43,4 +43,18 @@ namespace Screamer
             Name = name;
         }
     }
+
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public class ScreamActionAttribute : Attribute
+    {
+        /// <summary>
+        /// How is the condition accessable in the config?
+        /// </summary>
+        public String Name { get; set; }
+
+        public ScreamActionAttribute(String name)
+        {
+            Name = name;
+        }
+    }
 }

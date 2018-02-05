@@ -1,6 +1,7 @@
 ﻿using Kopernicus;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Screamer
@@ -16,6 +17,19 @@ namespace Screamer
             PopupDialog,
             ScreenMessage,
             Debug
+        }
+
+        /// <summary>
+        /// A class defining a button in a popup dialog
+        /// </summary>
+        [RequireConfigType(ConfigType.Node)]
+        public class ActionLoader
+        {
+            [ParserTarget("name", optional = false)]
+            public String name;
+
+            [ParserTarget("actions", optional = false)]
+            public StringCollectionParser actions;
         }
 
         [ParserTarget("name", optional = false)]
@@ -57,8 +71,9 @@ namespace Screamer
         [ParserTarget("message", optional = false)]
         public String message;
 
-        [ParserTarget("button")]
-        public String button = "OK";
+        // What options should the scream offer?
+        [ParserTargetCollection("Actions")]
+        public List<ActionLoader> actions;
 
         /// <summary>
         /// Whether the message was already shown in this KSP session
@@ -68,25 +83,29 @@ namespace Screamer
         /// <summary>
         /// Displays the scream if the condition evals to true
         /// </summary>
-        public void Process()
+        public void Process(Boolean force = false)
         {
-            // Was the scream already shown?
-            if (once && _shown)
+            // Is the execution forced?
+            if (!force)
             {
-                return;
-            }
+                // Was the scream already shown?
+                if (once && _shown)
+                {
+                    return;
+                }
 
-            // Build the evaluator variables
-            Boolean canExecute = true;
-            foreach (String s in condition.value)
-            {
-                canExecute &= ScreamBehaviour.Conditions[s]();
-            }
-            
-            // Should we continue?
-            if (!canExecute)
-            {
-                return;
+                // Build the evaluator variables
+                Boolean canExecute = true;
+                foreach (String s in condition.value)
+                {
+                    canExecute &= ScreamBehaviour.Conditions[s]();
+                }
+
+                // Should we continue?
+                if (!canExecute)
+                {
+                    return;
+                }
             }
 
             // Assemble the message
@@ -108,11 +127,48 @@ namespace Screamer
 
                 if (type == ScreamMessageType.PopupDialog)
                 {
+                    // Calculate the position on screen
                     Single x = position.value.x / Screen.width;
                     Single y = (Screen.height - position.value.y) / Screen.height;
+                    
+                    // Create the action buttons
+                    List<DialogGUIBase> elements = new List<DialogGUIBase>();
+                    foreach (ActionLoader element in actions)
+                    {
+                        elements.Add(new DialogGUIButton(element.name, () =>
+                        {
+                            // Process all actions
+                            foreach (String action in element.actions.value)
+                            {
+                                // Is the element another scream?
+                                if (ScreamBehaviour.Instance.screams.Any(s => s.name == action))
+                                {
+                                    Scream sc = ScreamBehaviour.Instance.screams.FirstOrDefault(s => s.name == action);
+                                    sc.Process(true);
+                                }
+                                
+                                // Is the element a ScreamAction?
+                                if (ScreamBehaviour.Actions.ContainsKey(action))
+                                {
+                                    ScreamBehaviour.Actions[action]();
+                                }
+                                
+                                // Is the element a link?
+                                if (action.StartsWith("url:"))
+                                {
+                                    Application.OpenURL("http://" + action.Substring(4));
+                                }
+                                if (action.StartsWith("urls:"))
+                                {
+                                    Application.OpenURL("https://" + action.Substring(5));
+                                }
+                            }
+
+                        }, element.actions.value.Contains("Dismiss")));
+                    }
                     MultiOptionDialog dialog = new MultiOptionDialog(Guid.NewGuid().ToString(), _message,
                         _title, UISkinManager.GetSkin("MainMenuSkin"), new Rect(x, y, 300f, 100f),
-                        new DialogGUIButton(button, () => { }, true));
+                        elements.ToArray());
                     PopupDialog.SpawnPopupDialog(new Vector2(0f, 1f), new Vector2(0f, 1f), dialog, false,
                         UISkinManager.GetSkin("MainMenuSkin"));
                 }
