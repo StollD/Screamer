@@ -25,14 +25,14 @@ namespace Screamer
         [RequireConfigType(ConfigType.Node)]
         public class ActionLoader
         {
-            [ParserTarget("name", optional = false)]
+            [ParserTarget("name", Optional = false)]
             public String name;
 
-            [ParserTarget("actions", optional = false)]
+            [ParserTarget("actions", Optional = false)]
             public StringCollectionParser actions;
         }
 
-        [ParserTarget("name", optional = false)]
+        [ParserTarget("name", Optional = false)]
         public String name;
 
         // Should the scream get displayed multiple times?
@@ -44,11 +44,11 @@ namespace Screamer
         public NumericParser<Single> delay = 0f;
 
         // When should the scream get displayed?
-        [ParserTarget("condition", optional = false)]
+        [ParserTarget("condition", Optional = false)]
         public StringCollectionParser condition;
 
         // How should the scream get displayed?
-        [ParserTarget("type", optional = false)]
+        [ParserTarget("type", Optional = false)]
         public EnumParser<ScreamMessageType> type;
 
         // The position of the ScreenMessage on the screen
@@ -64,11 +64,11 @@ namespace Screamer
         public Vector2Parser position = Vector2.one * 100f;
 
         // Which title should the popup dialog have?
-        [ParserTarget("title", optional = false)]
+        [ParserTarget("title", Optional = false)]
         public String title;
 
         // The message that will be displayed
-        [ParserTarget("message", optional = false)]
+        [ParserTarget("message", Optional = false)]
         public String message;
 
         // What options should the scream offer?
@@ -96,7 +96,7 @@ namespace Screamer
 
                 // Build the evaluator variables
                 Boolean canExecute = true;
-                foreach (String s in condition.value)
+                foreach (String s in condition.Value)
                 {
                     canExecute &= ScreamBehaviour.Conditions[s]();
                 }
@@ -128,8 +128,8 @@ namespace Screamer
                 if (type == ScreamMessageType.PopupDialog)
                 {
                     // Calculate the position on screen
-                    Single x = position.value.x / Screen.width;
-                    Single y = (Screen.height - position.value.y) / Screen.height;
+                    Single x = position.Value.x / Screen.width;
+                    Single y = (Screen.height - position.Value.y) / Screen.height;
                     
                     // Create the action buttons
                     List<DialogGUIBase> elements = new List<DialogGUIBase>();
@@ -138,7 +138,7 @@ namespace Screamer
                         elements.Add(new DialogGUIButton(element.name, () =>
                         {
                             // Process all actions
-                            foreach (String action in element.actions.value)
+                            foreach (String action in element.actions.Value)
                             {
                                 // Is the element another scream?
                                 if (ScreamBehaviour.Instance.screams.Any(s => s.name == action))
@@ -164,7 +164,7 @@ namespace Screamer
                                 }
                             }
 
-                        }, element.actions.value.Contains("Dismiss")));
+                        }, element.actions.Value.Contains("Dismiss")));
                     }
                     MultiOptionDialog dialog = new MultiOptionDialog(Guid.NewGuid().ToString(), _message,
                         _title, UISkinManager.GetSkin("MainMenuSkin"), new Rect(x, y, 300f, 100f),
