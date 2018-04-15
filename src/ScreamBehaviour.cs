@@ -1,6 +1,8 @@
 ﻿using Kopernicus;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
@@ -38,6 +40,13 @@ namespace Screamer
 
         void Start()
         {
+            // If this assembly wasn't elected, shut down
+            if (!SelectAssembly())
+            {
+                Destroy(this);
+                return;
+            }
+            
             // Keep this alive
             DontDestroyOnLoad(this);
             
@@ -45,10 +54,32 @@ namespace Screamer
             Instance = this;
 
             // Get the config file from GameData
-            ConfigNode config = GameDatabase.Instance.GetConfigs("SCREAMER")[0].config;
+            ConfigNode[] configs = GameDatabase.Instance.GetConfigs("SCREAM").Select(c => c.config).ToArray();
+            ConfigNode node = new ConfigNode();
+            for (Int32 i = 0; i < configs.Length; i++)
+            {
+                node.AddNode(configs[i]);
+            }
 
             // Load everything from it
-            Parser.LoadObjectFromConfigurationNode(this, config);
+            Parser.LoadObjectFromConfigurationNode(this, node);
+        }
+        
+        /// <summary>
+        /// Selects whether the assembly should get executed
+        /// </summary>
+        /// <returns></returns>
+        public bool SelectAssembly()
+        {
+            // Select all screamer assemblies
+            Assembly thisAssembly = Assembly.GetCallingAssembly();
+            AssemblyLoader.LoadedAssembly[] list = AssemblyLoader.loadedAssemblies
+                .Where(a => a.assembly.GetName().Name == thisAssembly.GetName().Name).ToArray();
+            
+            // Select the most recent one
+            AssemblyLoader.LoadedAssembly assembly = list.OrderByDescending(a => BuiltTime(a.assembly)).First();
+
+            return Equals(thisAssembly, assembly.assembly);
         }
 
         void IParserEventSubscriber.Apply(ConfigNode node)
@@ -179,6 +210,39 @@ namespace Screamer
             {
                 scream.Process();
             }
+        }
+        
+        /// <summary>
+        /// Returns the time when the assembly was built
+        /// </summary>
+        /// <returns></returns>
+        public static DateTime BuiltTime(Assembly assembly)
+        {
+            String filePath = assembly.Location;
+            const Int32 peHeaderOffset = 60;
+            const Int32 linkerTimestampOffset = 8;
+            Byte[] b = new Byte[2048];
+            Stream s = null;
+
+            try
+            {
+                s = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+                s.Read(b, 0, 2048);
+            }
+            finally
+            {
+                if (s != null)
+                {
+                    s.Close();
+                }
+            }
+
+            Int32 i = BitConverter.ToInt32(b, peHeaderOffset);
+            Int32 secondsSince1970 = BitConverter.ToInt32(b, i + linkerTimestampOffset);
+            DateTime dt = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+            dt = dt.AddSeconds(secondsSince1970);
+            dt = dt.ToUniversalTime();
+            return dt;
         }
     }
 }
