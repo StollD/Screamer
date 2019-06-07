@@ -1,7 +1,9 @@
-﻿using Kopernicus;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Kopernicus.ConfigParser.Attributes;
+using Kopernicus.ConfigParser.BuiltinTypeParsers;
+using Kopernicus.ConfigParser.Enumerations;
 using UnityEngine;
 
 namespace Screamer
